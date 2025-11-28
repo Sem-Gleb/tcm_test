@@ -23,6 +23,7 @@ function App() {
   const [leftTotal, setLeftTotal] = useState(0);
   const [leftPage, setLeftPage] = useState(0);
   const [leftLoading, setLeftLoading] = useState(false);
+  const [leftLocked, setLeftLocked] = useState(false);
 
   const [localExtraIds, setLocalExtraIds] = useState<number[]>([]);
 
@@ -46,11 +47,11 @@ function App() {
     setLeftItems([]);
     setLeftTotal(0);
     setLeftPage(0);
-     setLeftLoading(false);
+    setLeftLoading(false);
   }, [leftFilter, selectedOrder, loaded]);
 
   useEffect(() => {
-    if (!loaded) return;
+    if (!loaded || leftLocked) return;
     let cancelled = false;
     async function loadPage(page: number) {
       setLeftLoading(true);
@@ -72,7 +73,7 @@ function App() {
     return () => {
       cancelled = true;
     };
-  }, [leftPage, leftFilter, loaded]);
+  }, [leftPage, leftFilter, loaded, leftLocked]);
 
   const leftExtraFiltered = useMemo(() => {
     const filter = leftFilter.trim();
@@ -103,6 +104,7 @@ function App() {
     if (leftObserverRef.current) {
       leftObserverRef.current.disconnect();
     }
+    if (leftLocked) return;
     leftObserverRef.current = new IntersectionObserver((entries) => {
       const [entry] = entries;
       if (!entry.isIntersecting) return;
@@ -119,7 +121,7 @@ function App() {
         leftObserverRef.current.disconnect();
       }
     };
-  }, [leftComputedItems.length, leftComputedTotal, leftLoading]);
+  }, [leftComputedItems.length, leftComputedTotal, leftLoading, leftLocked]);
 
   const filteredSelected = useMemo(() => {
     if (!rightFilter.trim()) return selectedOrder;
@@ -172,6 +174,7 @@ function App() {
 
   function handleAddToSelected(id: number) {
     if (selectedOrder.includes(id)) return;
+    setLeftLocked(true);
     const next = [...selectedOrder, id];
     commitSelectedOrder(next);
   }
